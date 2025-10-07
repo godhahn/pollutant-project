@@ -15,21 +15,19 @@ library(readxl)
 library(lubridate)
 library(reshape2)
 library(GGally)
-
-setwd("C:/Users/yihah/OneDrive/Documents/NUS/Y4S1/ESE3201 Air Quality in Changing Environments/data")
 ```
 
 
 ```{r}
-e1 <- read_excel("E1-06-08.xlsx") %>%
+e1 <- read_excel("data/E1-06-08.xlsx") %>%
   slice(1:60) %>%
   mutate(Location = "E1-06-08 (Indoor)")
 
-techno <- read_excel("Techno Edge.xlsx") %>%
+techno <- read_excel("data/Techno Edge.xlsx") %>%
   slice(1:60) %>%
   mutate(Location = "Techno Edge (Hybrid)")
 
-bus <- read_excel("IT Bus Stop.xlsx") %>%
+bus <- read_excel("data/IT Bus Stop.xlsx") %>%
   slice(1:60) %>%
   mutate(Location = "IT Bus Stop (Outdoor)")
 
