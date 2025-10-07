@@ -1,0 +1,161 @@
+---
+title: "Analysis"
+author: "Pang Yi Hahn"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(tidyverse)
+library(readxl)
+library(lubridate)
+library(reshape2)
+library(GGally)
+
+setwd("C:/Users/yihah/OneDrive/Documents/NUS/Y4S1/ESE3201 Air Quality in Changing Environments/data")
+```
+
+
+```{r}
+e1 <- read_excel("E1-06-08.xlsx") %>%
+  slice(1:60) %>%
+  mutate(Location = "E1-06-08 (Indoor)")
+
+techno <- read_excel("Techno Edge.xlsx") %>%
+  slice(1:60) %>%
+  mutate(Location = "Techno Edge (Hybrid)")
+
+bus <- read_excel("IT Bus Stop.xlsx") %>%
+  slice(1:60) %>%
+  mutate(Location = "IT Bus Stop (Outdoor)")
+
+data_all <- bind_rows(e1, techno, bus) %>%
+  group_by(Location) %>%
+  mutate(Timestep = row_number()) %>%
+  ungroup()
+
+data_long <- data_all %>%
+  pivot_longer(
+    cols = c(`Temperature(C)`, `CO (ppm)`, `NO2 (ppm)`, `O3 (ppm)`, `SO2 (ppm)`),
+    names_to = "Pollutant",
+    values_to = "Measurement"
+  )
+```
+
+```{r}
+ggplot(data_long, aes(x = Timestep, y = Measurement, color = Location)) +
+  geom_line(linewidth = 1.2) +
+  facet_wrap(~ Pollutant, scales = "free_y", ncol = 1) +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Air Quality Measurements Across Locations",
+    x = "Timestep (1–60)",
+    y = "Measurements",
+    color = "Location"
+  ) +
+  theme(
+    plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+    strip.text = element_text(size = 14, face = "bold"),
+    legend.position = "bottom"
+  )
+
+ggsave("time_series_grid.png", width = 10, height = 12, dpi = 300)
+```
+
+```{r}
+data_norm <- data_long %>%
+  group_by(Pollutant) %>%
+  mutate(
+    Normalized = (Measurement - min(Measurement, na.rm = TRUE)) /
+                 (max(Measurement, na.rm = TRUE) - min(Measurement, na.rm = TRUE))
+  ) %>%
+  ungroup()
+
+avg_norm <- data_norm %>%
+  group_by(Location, Pollutant) %>%
+  summarise(Normalized_Avg = mean(Normalized, na.rm = TRUE), .groups = "drop")
+
+avg_actual <- data_long %>%
+  group_by(Location, Pollutant) %>%
+  summarise(Average_Value = mean(Measurement, na.rm = TRUE), .groups = "drop")
+
+avg_combined <- left_join(avg_norm, avg_actual, by = c("Location", "Pollutant"))
+
+ggplot(avg_combined, aes(x = Pollutant, y = Normalized_Avg, fill = Location)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.9)) +
+  geom_text(
+    aes(label = round(Average_Value, 4)),
+    position = position_dodge(width = 0.9),
+    vjust = -0.3,
+    size = 3.5
+  ) +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Normalized Pollutant Levels (Actual Averages Shown)",
+    x = "Pollutant",
+    y = "Normalized Measurement (0–1 scale)",
+    fill = "Location"
+  ) +
+  theme(
+    plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+    legend.position = "bottom"
+  )
+
+ggsave("barchart_normalised.png", width = 10, height = 8, dpi = 300)
+```
+
+```{r}
+ggplot(data_long, aes(x = Location, y = Measurement, fill = Location)) +
+  geom_boxplot(outlier.size = 1.5) +
+  facet_wrap(~ Pollutant, scales = "free_y") +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Distribution of Pollutant Measurements",
+    x = NULL,
+    y = "Measurements",
+    fill = "Location"
+  ) +
+  theme(
+    plot.title = element_text(size = 18, face = "bold", hjust = 0.5),
+    axis.text.x = element_blank(),
+    axis.ticks.x = element_blank(),
+    legend.position = "bottom",
+    legend.title = element_text(size = 12, face = "bold")
+  )
+
+ggsave("boxplot_distribution.png", width = 10, height = 8, dpi = 300)
+```
+
+```{r}
+data_corr <- data_all %>%
+  select(`Temperature(C)`, `CO (ppm)`, `NO2 (ppm)`, `O3 (ppm)`, `SO2 (ppm)`)
+
+corr_matrix <- round(cor(data_corr, use = "complete.obs"), 2)
+
+melted_corr <- melt(corr_matrix)
+
+# Plot heatmap
+ggplot(melted_corr, aes(Var1, Var2, fill = value)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = value), color = "black", size = 4) +
+  scale_fill_gradient2(
+    low = "blue", high = "red", mid = "white",
+    midpoint = 0, limit = c(-1, 1)
+  ) +
+  theme_minimal(base_size = 14) +
+  labs(
+    title = "Correlation Heatmap of Air Quality Variables",
+    x = NULL,
+    y = NULL
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+    plot.title = element_text(size = 18, face = "bold", hjust = 0.5)
+  )
+
+ggsave("heatmap_correlation.png", width = 8, height = 8, dpi = 300)
+```
