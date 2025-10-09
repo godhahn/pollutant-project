@@ -1,7 +1,7 @@
 # Engineering Air Quality Analysis
 
 ## Project Overview
-This data visualization project investigates air quality measurements across three distinct environments at NUS Engineering. The study compares pollutant levels and temperature readings from **indoor, hybrid, and outdoor** settings to understand spatial variations in air quality. Built using **R** and the **tidyverse** package.
+This data visualization project investigates air quality measurements across three distinct environments at NUS Engineering. The study compares pollutant levels and temperature readings from **indoor, hybrid, and outdoor** settings to understand spatial variations in air quality. Built using **R** and the **Tidyverse** package.
 
 ### Course: ESE3201 Air Quality in Changing Environments
 
